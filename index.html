@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Claim Flow v38</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#F5F5F5;--teal:#00666F;--teal-dark:#004F56;--ink:#1A1917;--sub:#6b6862;--line:#e4ded3;--err:#B3261E;--btn:#003538}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);min-height:100vh;color:var(--ink)}
+.wf{max-width:592px;min-width:375px;width:100%;margin:0 auto;position:relative}
+.screen{display:none;flex-direction:column;gap:14px}
+.screen.active{display:flex}
+.s-title{font-size:17px;font-weight:600;color:#1d1d1f;line-height:1.3}
+.card{background:#fff;border:1px solid #d2d2d7;border-radius:12px;overflow:hidden}
+.fi{width:100%;border:1px solid #c7c7cc;border-radius:8px;padding:9px 11px;font-size:14px;color:#1d1d1f;background:#fff;appearance:none;-webkit-appearance:none;font-family:inherit}
+.fi:focus{outline:none;border-color:#1d1d1f}
+.fi.srch{padding-left:30px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:10px center}
+.btn{width:100%;padding:13px;background:var(--btn);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-o{width:100%;padding:13px;background:#fff;color:#003538;border:1.5px solid #003538;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer}
+.back{font-size:12px;color:#6e6e73;cursor:pointer;background:none;border:none;padding:0;display:inline-flex;align-items:center;gap:3px}
+.screen-head{padding:12px 16px 0}
+.sec-lbl{font-size:11px;font-weight:500;color:#6e6e73;text-transform:uppercase;letter-spacing:.05em;padding:12px 16px 0}
+.pr-row{display:flex;justify-content:space-between;padding:8px 16px;border-bottom:1px solid #e8e8ea;font-size:13px}
+.pr-row:last-child{border:none}
+.pr-k{color:#6e6e73}.pr-v{color:#1d1d1f;font-weight:500}
+.tracker{position:relative;display:flex;padding:14px 16px;justify-content:space-between}
+.t-step{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;z-index:1;flex:1}
+.t-step:not(:first-child)::before{content:'';position:absolute;top:10px;left:calc(-50% + 12px);right:calc(50% + 12px);height:1.5px;background:#e8e8ea;z-index:0}
+.t-dot{width:22px;height:22px;border-radius:50%;background:#fff;border:1.5px solid #c7c7cc;display:flex;align-items:center;justify-content:center;font-size:10px;color:#aeaeb2;position:relative;z-index:1}
+.t-dot.act{background:#1d1d1f;border-color:#1d1d1f;color:#fff}
+.t-lbl{font-size:9px;color:#aeaeb2;text-align:center;line-height:1.2}
+.t-lbl.act{color:#1d1d1f;font-weight:500}
+/* HEADER */
+.landing-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fff;border-bottom:1px solid #e8e8ea;gap:10px}
+.landing-logo-name{font-size:15px;font-weight:600;color:#1d1d1f}
+.landing-nav{display:flex;align-items:center;gap:14px}
+.hdr-home{display:inline-flex;align-items:center;gap:4px;font-size:13.5px;font-weight:600;color:var(--btn);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0}
+.hdr-lang{display:inline-flex;align-items:center;gap:5px;font-size:13.5px;color:var(--ink);background:none;border:none;cursor:pointer;font-family:inherit}
+.hdr-av{width:32px;height:32px;border-radius:50%;background:#efefef;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:var(--ink)}
+@media (max-width:440px){.hdr-lang .hdr-lang-txt{display:none}.landing-nav{gap:10px}}
+/* What's new trigger */
+.wn-trigger{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px 0 8px;border:1px solid #1B3866;border-radius:8px;background:none;color:#1B3866;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.wn-trigger:focus-visible{outline:2px solid #1B3866;outline-offset:2px}
+.landing-body{padding:20px 16px;display:flex;flex-direction:column;gap:14px}
+.landing-card{background:#fff;border-radius:14px;border:1px solid #d2d2d7;padding:24px 20px;display:flex;flex-direction:column;gap:20px}
+.landing-welcome{font-size:26px;font-weight:700;color:#1d1d1f}
+.landing-policy{font-size:13px;color:#6e6e73;line-height:1.7}
+.landing-btns{display:flex;flex-direction:column;gap:10px}
+.rc-card{background:#fff;border:1.5px solid #e4e2de;border-radius:14px;overflow:hidden}
+.scb2{width:100%;height:48px;background:var(--btn);border:none;border-radius:8px;color:#fff;font-family:inherit;cursor:pointer;display:flex;align-items:stretch;padding:0;overflow:hidden}
+.scb2-label{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:600}
+.scb2-chev{width:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-left:1px solid rgba(255,255,255,.22)}
+.scb2.open .scb2-chev svg{transform:rotate(180deg)}
+.submit-menu{display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid #d2d2d7;border-radius:10px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:60}
+.submit-menu.open{display:block}
+.submit-menu-item{padding:13px 16px;font-size:14px;font-weight:500;color:#1d1d1f;cursor:pointer;border-bottom:1px solid #e8e8ea}
+.submit-menu-item:last-child{border-bottom:none}
+.submit-menu-item:hover{background:#f5f5f7}
+.pill2{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 12px;border-radius:100px;border:1px solid}
+.deplist{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sub)}
+.pgn{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--line)}
+.pgn-btn{font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;background:none;border:none}
+.pgn-btn.dis{color:#c8c2b6;cursor:default}
+/* Footer */
+/* Sheet */
+.hifi-shell{padding:12px 16px 32px}
+.hifi-sheet{background:#fff;border-radius:16px;padding:24px 20px 20px;display:flex;flex-direction:column;gap:16px}
+.hifi-title{font-size:24px;font-weight:500;color:var(--ink);line-height:1.25}
+.hifi-sub{font-size:13.5px;color:#3a3a3c;margin-top:2px}
+/* Stepper with labels */
+.nstep-wrap{display:flex;align-items:flex-start;justify-content:center;padding:18px 12px 6px}
+.nst{display:flex;flex-direction:column;align-items:center;gap:8px;width:96px;flex-shrink:0}
+.nst-dot{width:28px;height:28px;border-radius:50%;background:#d9d3c7;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff}
+.nst.done .nst-dot{background:transparent;border:1.5px solid var(--teal);color:var(--teal)}
+.nst.act .nst-dot{background:var(--ink);color:#fff}
+.nst-lbl{font-size:12px;color:#8e8b85;text-align:center;line-height:1.3}
+.nst.done .nst-lbl{color:var(--ink)}
+.nst.act .nst-lbl{color:var(--ink);font-weight:700}
+.nst-line{flex:1;height:2px;background:#d9d3c7;max-width:140px;margin-top:13px}
+.nst-line.done{background:var(--teal)}
+/* Upload */
+.upz2{border-radius:10px;padding:32px 16px;text-align:center;background:#f0efec;border:1.5px dashed #c8c2b6}
+.upz2.has-err{border-color:var(--err);background:#fdf6f5}
+.upz2-icon{margin:0 auto 10px;width:34px}
+.upz2-txt{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:14px}
+.upz2-browse{display:inline-block;padding:10px 26px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;color:#fff;background:var(--btn);border:none;font-family:inherit}
+.upz2-hint{font-size:12.5px;color:#3a3a3c;line-height:1.55}
+.upz2-ok{margin-top:10px;font-size:12.5px;color:#1a5c35;background:#f0faf4;padding:8px 11px;border-radius:8px;border:1px solid #a8ddb8;display:none;align-items:center;justify-content:center;gap:6px}
+.upz2-ok.vis{display:flex}
+.up-prog{display:none;margin-top:12px;font-size:12.5px;color:var(--sub)}
+.up-prog.vis{display:block}
+.up-bar{height:6px;border-radius:3px;background:#ddd7cc;overflow:hidden;margin:6px auto 0;max-width:240px}
+.up-bar span{display:block;height:100%;width:0;background:var(--teal);transition:width 1.1s linear}
+.up-err{display:none;margin-top:12px;text-align:left;background:#fff;border:1px solid #f0c9c5;border-radius:8px;padding:10px 12px;font-size:13px;color:var(--err);line-height:1.5;gap:8px;align-items:flex-start}
+.up-err.vis{display:flex}
+.up-err button{margin-top:6px;background:none;border:none;color:var(--btn);font-weight:700;text-decoration:underline;cursor:pointer;font-family:inherit;font-size:13px;padding:0}
+/* Fields */
+.f-lbl{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.f-lbl .req{color:var(--err)}
+.f-wrap{display:flex;align-items:center;border:1px solid #c7c7cc;border-radius:8px;background:#fff;padding:0 12px;height:46px;gap:8px}
+.f-wrap:focus-within{border-color:var(--btn);box-shadow:0 0 0 1px var(--btn)}
+.f-wrap input{border:none;outline:none;flex:1;min-width:0;font-size:15px;color:var(--ink);background:transparent;font-family:inherit;height:100%}
+.f-wrap .pre{font-size:15px;color:var(--ink)}
+.f-cal{background:none;border:none;cursor:pointer;display:flex;padding:4px;border-radius:6px}
+.f-cal:focus-visible{outline:2px solid var(--btn)}
+.f-hint{font-size:12.5px;color:#5c5954;margin-top:6px;line-height:1.45}
+.f-err{display:none;font-size:12.5px;color:var(--err);margin-top:6px;line-height:1.45}
+.fld.err .f-lbl{color:var(--err)}
+.fld.err .f-wrap{border-color:var(--err);box-shadow:none}
+.fld.err .f-err{display:block}
+.fld.err .f-cal svg{stroke:var(--err)}
+.f-grid{display:grid;grid-template-columns:1fr;gap:18px}
+.tip-btn{background:none;border:none;cursor:pointer;display:inline-flex;padding:1px;border-radius:50%;color:var(--btn)}
+.tip-btn:focus-visible{outline:2px solid var(--btn)}
+.tip{position:relative}
+.tip-pop{display:none;position:absolute;left:-8px;top:26px;z-index:40;width:250px;background:#fff;border:1px solid #d9d3c7;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);padding:10px 30px 10px 12px;font-size:12.5px;font-weight:400;line-height:1.5;color:var(--ink)}
+.tip-pop.vis{display:block}
+.tip-x{position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--sub)}
+.act-row{display:flex;gap:12px}
+.act-row>*{flex:1}
+/* Calendar */
+.cal{display:none;position:absolute;z-index:45;top:calc(100% + 6px);left:0;width:300px;background:#fff;border:1px solid #d9d3c7;border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.14);padding:12px}
+.cal.vis{display:block}
+.cal-hd{display:flex;gap:8px;margin-bottom:10px}
+.cal-hd select{flex:1;border:1px solid #c7c7cc;border-radius:6px;padding:7px 8px;font-size:13.5px;font-family:inherit;background:#fff}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.cal-dow{font-size:11px;color:var(--sub);padding:4px 0;font-weight:600}
+.cal-d{border:none;background:none;height:34px;border-radius:50%;font-size:13px;cursor:pointer;font-family:inherit;color:var(--ink)}
+.cal-d:hover:not(:disabled){background:#eef4f3}
+.cal-d.sel{background:var(--btn);color:#fff}
+.cal-d.today{box-shadow:inset 0 0 0 1px var(--teal)}
+.cal-d:disabled{color:#c8c2b6;cursor:not-allowed;text-decoration:line-through}
+.cal-note{font-size:11.5px;color:var(--sub);margin-top:8px}
+/* Claim type rows */
+.tr2{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px}
+.tr2-icon{width:40px;height:40px;flex-shrink:0}
+.tr2-body{flex:1;min-width:0}
+.tr2-title{font-size:14.5px;font-weight:600;color:var(--ink)}
+.tr2-sub{font-size:12px;color:var(--sub);margin-top:3px;line-height:1.4}
+.tr2-chev{color:#c7c7cc;font-size:20px}
+/* Review */
+.rv-card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;padding-bottom:6px}
+.rv-hd{font-size:16px;font-weight:700;color:var(--ink);padding:18px 18px 14px;display:flex;align-items:center;gap:10px}
+.rv-row{display:flex;justify-content:space-between;align-items:center;padding:8px 18px;font-size:14px;gap:12px}
+.rv-v{font-weight:600;text-align:right}
+.rv-file{color:var(--teal);font-weight:700;cursor:pointer}
+.ack-err{display:none;font-size:12.5px;color:var(--err);margin-top:8px}
+.ack-err.vis{display:block}
+.sub-err{display:none;background:#fdf3f2;border:1px solid #f0c9c5;border-radius:10px;padding:12px 14px;gap:10px;font-size:13.5px;color:#5f1a15;line-height:1.5}
+.sub-err.vis{display:flex}
+.sub-err strong{display:block;color:var(--err);margin-bottom:2px}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+.cal-info{background:#eaf2fb;border-radius:10px;padding:13px 14px;display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:#1a3a6e;line-height:1.6}
+/* Buttons */
+.btn2{width:100%;padding:14px;background:var(--btn);color:#fff;border:none;border-radius:10px;font-size:14.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit}
+.btn2:disabled{opacity:.75;cursor:progress}
+.btn2-o{width:100%;padding:14px;background:#fff;color:#003538;border:1.5px solid #003538;border-radius:10px;font-size:14.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit}
+.btn2-o-teal{width:100%;padding:14px;background:#fff;color:#003538;border:1.5px solid #003538;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer}
+/* Status (vertical) */
+.vstat{padding:4px 18px 10px}
+.vs-step{display:flex;gap:16px;align-items:flex-start}
+.vs-ico{width:40px;height:40px;flex-shrink:0;display:block}
+.vs-txt{padding-top:2px}
+.vs-lbl{font-size:15px;font-weight:700;color:#262626;line-height:1.3}
+.vs-lbl.off{color:#595959;font-weight:600}
+.vs-date{font-size:12.5px;color:#595959;margin-top:3px}
+.vs-mid .vs-lbl{padding-top:9px}
+.vs-line{width:2px;height:24px;margin:4px 0 4px 19px}
+/* Modals */
+.mdl-ov{position:fixed;inset:0;background:rgba(20,18,15,.55);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.mdl-ov.vis{display:flex}
+.mdl{background:#fff;border-radius:16px;width:100%;max-width:440px;padding:22px 22px 20px;box-shadow:0 20px 60px rgba(0,0,0,.25);position:relative}
+.mdl-t{font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px;padding-right:24px}
+.mdl-b{font-size:14px;color:#3a3a3c;line-height:1.55;margin-top:10px}
+.mdl-x{position:absolute;top:14px;right:14px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--ink)}
+.mdl-acts{display:flex;gap:28px;margin-top:24px;justify-content:flex-end;align-items:center}
+.mdl-acts .btn2{width:auto;padding:12px 26px}
+.mdl-link{background:none;border:none;color:var(--err);font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:12px 4px}
+.mdl-link:focus-visible{outline:2px solid var(--err);border-radius:6px}
+/* What's new modal (v38) */
+.wn-overlay{position:fixed;inset:0;background:rgba(20,18,15,.55);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.wn-overlay.vis{display:flex}
+.wn-modal{background:#fff;border-radius:20px;width:100%;max-width:560px;max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,.25);display:flex;flex-direction:column;overflow:hidden}
+.wn-hero{background:#003538;padding:28px 28px 32px;position:relative;color:#fff;flex-shrink:0}
+.wn-hero-close{position:absolute;top:28px;right:26px;width:32px;height:32px;background:none;border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.wn-hero-close:focus-visible{outline:2px solid #fff}
+.wn-hero-badge{display:inline-flex;align-items:center;gap:8px;background:#D7F3F3;color:#1A1917;padding:6px 16px;border-radius:100px;font-size:14px;font-weight:600;margin-bottom:16px}
+.wn-hero-title{font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:400;line-height:1.2}
+.wn-hero-sub{font-size:15px;color:#fff;margin-top:12px;line-height:1.55}
+.wn-body{padding:24px 28px 8px;overflow-y:auto;flex:1}
+.wn-box{background:#F6F3EF;border-radius:10px;padding:22px 24px;margin-bottom:24px;display:flex;flex-direction:column;gap:22px}
+.wn-box-t{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.wn-box-d{font-size:13px;color:#3a3a3c;line-height:1.75}
+.wn-sec{margin-bottom:22px}
+.wn-sec-t{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:10px}
+.wn-sec ul{margin:0 0 0 24px;padding:0}
+.wn-sec li{font-size:14.5px;color:var(--ink);line-height:1.6}
+.wn-foot{padding:8px 28px 24px}
+.wn-btnrow{display:flex;gap:24px}
+/* Browse sheet */
+.bsheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150;display:none}
+.bsheet-overlay.vis{display:block}
+.bsheet{position:fixed;left:50%;bottom:0;width:100%;max-width:592px;z-index:151;display:none;flex-direction:column;gap:8px;padding:8px;transform:translateX(-50%)}
+.bsheet.vis{display:flex}
+.bsheet-card{background:#f6f6f6;border-radius:14px;overflow:hidden}
+.bsheet-title{text-align:center;font-size:12.5px;color:#8e8e93;padding:12px 16px 11px;border-bottom:.5px solid rgba(60,60,67,.29)}
+.bsheet-opt{width:100%;background:none;border:none;border-bottom:.5px solid rgba(60,60,67,.29);padding:15px 16px;font-size:16.5px;color:var(--teal);font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-family:inherit}
+.bsheet-opt:last-child{border-bottom:none}
+.bsheet-cancel{width:100%;background:#fff;border:none;border-radius:14px;padding:15px 16px;font-size:16.5px;font-weight:600;color:var(--teal);cursor:pointer;font-family:inherit}
+/* Eligible expenses */
+.es-link{display:inline-flex;align-items:center;gap:6px;padding:2px 0;background:none;border:none;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--teal);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.es-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:160;opacity:0;pointer-events:none;transition:opacity .2s}
+.es-overlay.vis{opacity:1;pointer-events:auto}
+.esheet{position:fixed;left:50%;bottom:0;width:100%;max-width:592px;z-index:161;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;height:62vh;transform:translateX(-50%) translateY(100%);visibility:hidden;transition:transform .26s,visibility 0s linear .26s}
+.esheet[data-state="full"]{height:92vh}
+.esheet.vis{transform:translateX(-50%) translateY(0);visibility:visible;transition:transform .26s,visibility 0s}
+.es-head{flex-shrink:0;padding:0 18px 12px;border-bottom:1px solid var(--line)}
+.es-grab{padding:10px 0 12px;cursor:pointer}
+.es-handle{width:40px;height:4px;border-radius:2px;background:#d0cabf;margin:0 auto}
+.es-headrow{display:flex;align-items:center;justify-content:space-between}
+.es-title{font-size:18px;font-weight:700}
+.es-close{width:32px;height:32px;border-radius:50%;background:none;border:none;font-size:18px;cursor:pointer}
+.es-body{flex:1;min-height:0;overflow-y:auto;padding:0 18px 28px}
+.es-search{position:sticky;top:0;z-index:2;background:#fff;padding:14px 0 12px}
+.es-search .fi.srch{font-size:16px;padding:11px 11px 11px 34px}
+.es-cat{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.es-cat-btn{width:100%;display:flex;align-items:center;gap:10px;padding:14px;background:none;border:none;font-family:inherit;text-align:left;cursor:pointer;color:var(--ink)}
+.es-cat-name{flex:1;font-size:14.5px;font-weight:600}
+.es-cat-count{font-size:12px;color:var(--sub)}
+.es-cat.open .es-chev{transform:rotate(180deg)}
+.es-cat-panel{display:none;padding:0 14px 14px}
+.es-cat.open .es-cat-panel{display:block}
+.es-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.es-list li{position:relative;padding-left:16px;font-size:13.5px;line-height:1.45}
+.es-list li::before{content:'';position:absolute;left:3px;top:.55em;width:5px;height:5px;border-radius:50%;background:var(--teal)}
+.es-cat.nope{background:#faf9f7}
+.es-cat.nope .es-list li::before{background:#9e9a94}
+.es-body mark{background:#fff1b8;color:inherit}
+.es-empty{display:none;font-size:13.5px;color:var(--sub);padding:6px 2px 10px}
+.es-empty.vis{display:block}
+.es-foot{font-size:13px;color:var(--sub);margin-top:6px}
+/* Demo panel */
+.demo{display:none;position:fixed;right:12px;bottom:12px;z-index:400;width:250px;background:#1f1f1f;color:#eee;border-radius:12px;padding:12px 14px;font-size:12px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.demo.vis{display:block}
+.demo h4{font-size:12px;margin-bottom:8px;display:flex;justify-content:space-between}
+.demo label{display:block;margin:8px 0 4px;color:#bbb}
+.demo select,.demo button{width:100%;padding:6px;border-radius:6px;border:none;font-family:inherit;font-size:12px}
+.demo button{margin-top:10px;background:#4fb3b8;color:#002;font-weight:700;cursor:pointer}
+.demo small{display:block;margin-top:8px;color:#999;line-height:1.4}
+/* Review card header w/ Edit (from v31) */
+.rv-hd-row{display:flex;justify-content:space-between;align-items:center;padding:18px 18px 4px}
+.rv-hd-row .rv-hd{padding:0}
+.rv-edit{color:var(--teal);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;background:none;border:none;font-family:inherit;padding:0}
+/* Slide-in edit panel (from v31) */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:none}
+.overlay.vis{display:block}
+.edit-panel{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:592px;min-width:375px;background:#fff;border-radius:18px 18px 0 0;z-index:101;box-shadow:0 -8px 30px rgba(0,0,0,.18);display:none;flex-direction:column;max-height:88vh;overflow-y:auto}
+.edit-panel.vis{display:flex}
+.ep-head{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 14px;border-bottom:1px solid var(--line)}
+.ep-title{font-size:18px;font-weight:700;color:var(--ink)}
+.ep-close{cursor:pointer;color:var(--ink);background:none;border:none;font-size:20px;line-height:1}
+.ep-body{padding:18px;display:flex;flex-direction:column;gap:16px}
+.ep-field-lbl{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.ep-fi-plain{width:100%;border:1px solid #c7c7cc;border-radius:8px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit}
+.ep-foot{display:flex;gap:10px;padding:16px 18px;border-top:1px solid var(--line)}
+.ep-save{flex:1;padding:13px;background:var(--btn);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.ep-cancel{flex:1;padding:13px;background:#fff;color:#c0392b;border:1.5px solid #c0392b;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+/* Processing-delay alert */
+.delay-alert{background:#C6D7EE;border-radius:8px;padding:14px 16px;display:flex;gap:12px;align-items:center;font-size:14px;font-weight:700;color:#262626;line-height:1.45}
+.delay-alert svg{flex-shrink:0}
+/* Footer v36 */
+.gfooter{max-width:592px;min-width:375px;margin:20px auto 0;padding:0;text-align:left;background:#fff}
+.gf-top{display:flex;flex-wrap:wrap;align-items:center;gap:16px 32px;padding:28px 24px}
+.gf-logo{display:block;flex-shrink:0}
+.gf-links{display:flex;flex-wrap:wrap;align-items:center;gap:12px 26px}
+.gf-links a{display:inline-flex;align-items:center;gap:8px;font-size:16px;line-height:1.3;color:#003538;text-decoration:none;cursor:pointer}
+.gf-links a:hover{text-decoration:underline}
+.gf-ext{flex-shrink:0}
+.gf-bot{border-top:1px solid #d2d2d7;padding:18px 20px 26px;font-size:12.5px;color:#3a3a3c;line-height:1.75}
+/* Desktop */
+@media (min-width:900px){
+  .landing-header{padding:14px 28px}
+  .hifi-shell{padding:16px 28px 36px}
+  .f-grid{grid-template-columns:1fr 1fr;gap:16px}
+  .act-row{justify-content:flex-end}
+  .act-row>*{flex:0 0 180px}
+  .esheet{left:auto;right:0;top:0;bottom:auto;width:440px;height:100vh!important;border-radius:18px 0 0 18px;transform:translateX(100%)}
+  .esheet.vis{transform:translateX(0)}
+  .es-grab{display:none}
+  .es-head{padding-top:18px}
+}
+</style>
+</head>
+<body>
+<div class="wf" id="wf">
+
+<!-- ═══════════════ LANDING ═══════════════ -->
+<div id="s-landing" class="screen active" style="gap:0;min-height:100vh">
+  <div class="fhdr" data-mode="home"></div>
+  <div class="landing-body">
+    <div class="landing-card">
+      <div>
+        <div class="landing-welcome">Welcome!</div>
+        <div class="landing-policy" style="margin-top:12px">ABC Company - Policy 90396<br>Certificate - 000 000 6240</div>
+      </div>
+      <div class="landing-btns" style="position:relative">
+        <button class="scb2 submit-claim-btn" onclick="toggleSubmitMenu(event)">
+          <span class="scb2-label">Submit a new claim</span>
+          <span class="scb2-chev"><svg width="10" height="7" viewBox="0 0 10 7" fill="white"><path d="M1.529 1.5286C1.789 1.2683 2.211 1.2683 2.471 1.5286L5 4.0572L7.529 1.5286C7.789 1.2683 8.211 1.2683 8.471 1.5286C8.732 1.789 8.732 2.2111 8.471 2.4714L5.471 5.4714C5.211 5.7318 4.789 5.7318 4.529 5.4714L1.529 2.4714C1.268 2.2111 1.268 1.789 1.529 1.5286Z"/></svg></span>
+        </button>
+        <div id="submit-menu" class="submit-menu">
+          <div class="submit-menu-item" onclick="closeSubmitMenu();alert('Redirecting to standard claim form…')">Classic claim submission</div>
+          <div class="submit-menu-item" onclick="closeSubmitMenu();go('s-landing-new')">New claim submission</div>
+        </div>
+      </div>
+    </div>
+    <div class="rc-card" style="margin-top:32px">
+      <div style="padding:16px 16px 0;display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="font-size:21px;font-weight:500">My claims</div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+          <a onclick="alert('Opening full claims list…')" style="font-size:13px;color:#185FA5;font-weight:600;cursor:pointer">View all claims ›</a>
+          <a onclick="alert('Opening TSA claims list…')" style="font-size:13px;color:#185FA5;font-weight:600;cursor:pointer">View TSA claims ›</a>
+        </div>
+      </div>
+      <div id="claim-card-body" style="padding:14px 16px 0"></div>
+      <div id="claim-card-actions" style="padding:10px 16px 16px;display:flex;flex-direction:column;gap:8px"></div>
+      <div class="pgn">
+        <button class="pgn-btn" id="pgn-back" onclick="claimPage(-1)">‹ Back</button>
+        <button class="pgn-btn" id="pgn-next" onclick="claimPage(1)">Next ›</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ CLAIM TYPE PICKER ═══════════════ -->
+<div id="s-landing-new" class="screen" style="gap:0;min-height:100vh">
+  <div class="fhdr" data-mode="plain"></div>
+  <div class="landing-body">
+    <div class="landing-card">
+      <div>
+        <div class="landing-welcome" style="font-size:22px">What type of claim is this?</div>
+      </div>
+      <div class="tr2" onclick="startTSA()">
+        <svg class="tr2-icon" viewBox="0 0 40 40" fill="none"><path d="M0 8C0 3.58 3.58 0 8 0H32C36.42 0 40 3.58 40 8V32C40 36.42 36.42 40 32 40H8C3.58 40 0 36.42 0 32V8Z" fill="#EDFDFB"/><g stroke="#005C61" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 23V29.75"/><path d="M28.25 23.75H26.75C24.275 23.75 22.25 25.775 22.25 28.25V29.75H23.75C26.225 29.75 28.25 27.725 28.25 25.25V23.75Z"/><path d="M13.25 23.75H11.75V25.25C11.75 27.725 13.775 29.75 16.25 29.75H17.75V28.25C17.75 25.775 15.725 23.75 13.25 23.75Z"/><path d="M19.94 20.525C19.94 20.525 25.61 17.75 26.09 13.775C26.33 11.9675 25.0025 10.28 23.195 10.28C21.8675 10.28 20.66 11.1275 20.18 12.3275C20.18 12.4475 19.94 12.4475 19.82 12.3275C19.46 11.12 18.2525 10.16 16.805 10.28C14.9975 10.3925 13.67 12.08 13.91 13.775C14.1575 15.7925 15.7025 17.5025 17.1725 18.695"/></g></svg>
+        <div class="tr2-body">
+          <div class="tr2-title">Taxable Spending Account (TSA)</div>
+          <div class="tr2-sub">Wellness expenses reimbursed through your Taxable Spending Account.</div>
+        </div>
+        <div class="tr2-chev">›</div>
+      </div>
+      <button class="btn2-o" onclick="go('s-landing')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TSA — Step 1: Upload ═══════════════ -->
+<div id="s-tsa-upload" class="screen" style="gap:0;min-height:100vh">
+  <div class="fhdr" data-mode="flow"></div>
+  <div class="nstep" data-step="1"></div>
+  <div class="hifi-shell">
+    <div class="hifi-sheet">
+      <div>
+        <div class="hifi-title">Upload your receipt</div>
+        <div class="hifi-sub">Attach the receipt for the expense you're claiming.</div>
+      </div>
+      <div class="upz2" id="upz">
+        <svg class="upz2-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#1a1917" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-1.5-8.74A5.5 5.5 0 0 1 16.2 7.02 4 4 0 0 1 17 15"/><path d="M12 12v7M9.5 14.5 12 12l2.5 2.5"/></svg>
+        <div class="upz2-txt">Drag and drop to upload file or</div>
+        <button class="upz2-browse" onclick="openBrowseSheet()">Browse</button>
+        <div id="up-prog" class="up-prog" aria-live="polite">Uploading Receipt.pdf…<div class="up-bar"><span id="up-bar"></span></div></div>
+        <div id="tsa-receipt-ok" class="upz2-ok" role="status">✓ Receipt uploaded</div>
+        <div id="up-err" class="up-err" role="alert"><span aria-hidden="true">⚠</span><div><span id="up-err-txt"></span><br><button id="up-retry" onclick="openBrowseSheet()">Try again</button></div></div>
+      </div>
+      <div class="upz2-hint">You can upload a file up to 10mb in size. We accept PDF, PNG, BMP, JPG, and TIFF file formats.</div>
+      <div class="act-row">
+        <button class="btn2-o" onclick="leaveCheck(()=>go('s-landing-new'))"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+        <button class="btn2" onclick="uploadContinue()">Continue <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TSA — Step 2: Details ═══════════════ -->
+<div id="s-tsa-details" class="screen" style="gap:0;min-height:100vh">
+  <div class="fhdr" data-mode="flow"></div>
+  <div class="nstep" data-step="2"></div>
+  <div class="hifi-shell">
+    <div class="hifi-sheet">
+      <div class="hifi-title">Taxable Spending Account (TSA)</div>
+      <div class="cal-info">
+        <span style="font-size:15px;flex-shrink:0">ⓘ</span>
+        <span>A <strong>Taxable Spending Account (TSA)</strong> helps cover eligible wellness and lifestyle expenses, such as fitness, well-being and personal development. Reimbursements are considered taxable income.</span>
+      </div>
+      <div style="margin-top:-6px">
+        <button type="button" class="es-link" onclick="openEligibleSheet()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v5.5M12 7.6v.1"/></svg>See eligible expenses</button>
+      </div>
+      <div class="f-grid">
+        <div class="fld" id="fld-date" style="position:relative">
+          <label class="f-lbl" for="tsa-date">Date of expense <span class="req">*</span></label>
+          <div class="f-wrap">
+            <input id="tsa-date" inputmode="numeric" autocomplete="off" placeholder="YYYY / MM / DD" aria-describedby="date-err" maxlength="14"/>
+            <button class="f-cal" type="button" aria-label="Choose date from calendar" onclick="toggleCal(event)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a3a3c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button>
+          </div>
+          <div class="f-err" id="date-err" role="alert"></div>
+          <div class="cal" id="cal" role="dialog" aria-label="Choose a date"></div>
+        </div>
+        <div class="fld" id="fld-amt">
+          <div class="f-lbl"><label for="tsa-amount">Amount <span class="req">*</span></label>
+            <span class="tip"><button class="tip-btn" type="button" aria-label="Paid in US dollars?" aria-expanded="false" onclick="toggleTip(event)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5v.1"/></svg></button>
+              <span class="tip-pop" id="tip" role="tooltip">Paid in US dollars? Enter the amount as shown on your receipt. We'll convert it to Canadian dollars when we process your claim.<button class="tip-x" type="button" aria-label="Close" onclick="toggleTip(event,false)">✕</button></span></span>
+          </div>
+          <div class="f-wrap"><span class="pre">$</span><input id="tsa-amount" inputmode="decimal" autocomplete="off" aria-describedby="amt-hint amt-err"/></div>
+          <div class="f-hint" id="amt-hint">Enter the total from your receipt, including taxes.</div>
+          <div class="f-err" id="amt-err" role="alert"></div>
+        </div>
+      </div>
+      <div class="act-row">
+        <button class="btn2-o" onclick="go('s-tsa-upload')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+        <button class="btn2" onclick="detailsContinue()">Continue <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ REVIEW & SUBMIT ═══════════════ -->
+<div id="s-review2" class="screen" style="gap:0;min-height:100vh">
+  <div class="fhdr" data-mode="flow"></div>
+  <div class="nstep" data-step="3"></div>
+  <div class="hifi-shell">
+    <div class="hifi-sheet">
+      <div class="hifi-title">Review &amp; submit</div>
+      <div class="sub-err" id="sub-err" role="alert" tabindex="-1"><span aria-hidden="true" style="color:var(--err)">⚠</span><div><strong>Your claim wasn't submitted</strong>Something went wrong on our side. Your details are still here, so you can try again.</div></div>
+      <div class="rv-card">
+        <div class="rv-hd"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00666F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>Claim summary</div>
+        <div class="rv-row"><span>TSA expense</span><span class="rv-v" id="r2-amt">$120.00</span></div>
+        <div class="rv-row"><span>Date of service</span><span class="rv-v" id="r2-date">August 6, 2026</span></div>
+        <div class="rv-row" style="padding-bottom:16px"><span>Attachment</span><span class="rv-v">&lt;Name of the file&gt;</span></div>
+      </div>
+      <div class="rv-card">
+        <div class="rv-hd-row">
+          <div class="rv-hd">Direct deposit</div>
+          <button type="button" class="rv-edit" onclick="openEditPanel('deposit')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>Edit</button>
+        </div>
+        <div class="rv-row" style="padding-bottom:16px"><span>Reimbursement to</span><span class="rv-v">Account ending ···· 4821</span></div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a1917" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11v13H4z"/><path d="M4 9h7M4 13h5"/><path d="M15 13l5-5 3 3-5 5h-3z"/></svg>
+          <span style="font-size:16px;font-weight:700">Acknowledgement</span>
+        </div>
+        <p style="font-size:13.5px;margin-bottom:12px">To continue, you must review the <a onclick="alert('Opening terms and conditions…')" style="color:var(--teal);text-decoration:underline;cursor:pointer">terms and conditions.</a></p>
+        <label style="display:flex;gap:10px;align-items:flex-start;font-size:13.5px;cursor:pointer">
+          <input type="checkbox" id="r2-ack" aria-describedby="ack-err" style="margin-top:2px;flex-shrink:0;width:17px;height:17px;accent-color:#00666F" onchange="if(this.checked)ackErr(false)"/>
+          <span>By submitting this request, I confirm that:</span>
+        </label>
+        <ul style="margin:8px 0 0 34px;font-size:13.5px;line-height:1.6"><li>I have reviewed and agree to the terms and conditions at the link above.</li></ul>
+        <div class="ack-err" id="ack-err" role="alert">Must agree to continue</div>
+      </div>
+      <button class="btn2" id="submit-btn" onclick="submitClaim()">Submit claim</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ CONFIRMATION ═══════════════ -->
+<div id="s-done-tsa2" class="screen" style="gap:0;min-height:100vh">
+  <div class="fhdr" data-mode="plain"></div>
+  <div style="text-align:center;padding:28px 16px 4px">
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" style="margin:0 auto 14px;display:block"><circle cx="12" cy="12" r="9.3" stroke="#00666F" stroke-width="1.4"/><path d="M8 12.5l2.6 2.6L16.3 9" stroke="#00666F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="hifi-title" style="font-size:24px">Claim submitted!</div>
+  </div>
+  <div class="hifi-shell" style="padding-top:16px">
+    <div class="hifi-sheet">
+      <div class="rv-card" style="border:none;padding-bottom:0">
+        <div class="rv-hd" style="padding-bottom:8px">Status &amp; next steps</div>
+        <div class="vstat" role="list" aria-label="Claim status">
+          <div class="vs-step" role="listitem">
+            <svg class="vs-ico" viewBox="0 4 40 40" fill="none"><rect x="0.25" y="4.25" width="39.5" height="39.5" rx="19.75" fill="#F3FCFF" stroke="#00A4AC" stroke-width="0.5"/><g stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19.35 33.19H14.35C13.66 33.19 13.1 32.63 13.1 31.94V16.94C13.1 16.26 13.66 15.69 14.35 15.69H19.97" stroke="#005C61"/><path d="M26.85 19.44H23.72C23.04 19.44 22.47 18.88 22.47 18.19V15.69L26.85 19.44ZM26.85 19.44V26.94" stroke="#005C61"/><path d="M21.22 30.88L23.35 33.01L26.79 29.63" stroke="#00A4AC"/></g></svg>
+            <div class="vs-txt"><div class="vs-lbl">Submitted</div><div class="vs-date" id="sub-date">Friday, February 28, 2026</div></div>
+          </div>
+          <div class="vs-line" style="background:#00A4AC"></div>
+          <div class="vs-step vs-mid" role="listitem">
+            <svg class="vs-ico" viewBox="0 80 40 40" fill="none"><rect x="0.25" y="80.25" width="39.5" height="39.5" rx="19.75" fill="#F3FCFF" stroke="#00A4AC" stroke-width="0.5"/><g stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.875 100C11.875 95.5 15.5 91.875 20 91.875C23.19 91.875 26 93.75 27.5 96.25" stroke="#005C61"/><path d="M27.5 93.75V96.25H25" stroke="#005C61"/><path d="M28.125 100C28.125 104.5 24.5 108.125 20 108.125C16.81 108.125 14 106.25 12.5 103.75" stroke="#005C61"/><path d="M12.5 106.25V103.75H15" stroke="#005C61"/><path d="M16.25 97.5H23.75V102.5H16.25V97.5Z" stroke="#00A4AC"/></g><circle cx="20" cy="100" r="0.94" fill="#00A4AC"/></svg>
+            <div class="vs-txt"><div class="vs-lbl">In progress</div></div>
+          </div>
+          <div class="vs-line" style="background:#CCCCCC"></div>
+          <div class="vs-step vs-mid" role="listitem" aria-disabled="true">
+            <svg class="vs-ico" viewBox="0 152 40 40" fill="none"><rect x="0.25" y="152.25" width="39.5" height="39.5" rx="19.75" fill="#FAFAFA" stroke="#CCCCCC" stroke-width="0.5"/><g stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.625 168.125C13.4375 166.688 14.6875 165.438 16.125 165.625C16.9375 165.75 17.75 165.375 18.1875 164.75C19.0625 163.562 20.875 163.562 21.75 164.75C22.25 165.375 23.0625 165.75 23.8125 165.625C25.25 165.438 26.5 166.688 26.3125 168.125C26.1875 168.938 26.5625 169.75 27.1875 170.188C28.375 171.062 28.375 172.875 27.1875 173.75C26.5625 174.25 26.1875 175.062 26.3125 175.812C26.5 177.25 25.25 178.5 23.8125 178.312C23 178.187 22.1875 178.562 21.75 179.187C20.875 180.375 19.0625 180.375 18.1875 179.187C17.6875 178.562 16.875 178.187 16.125 178.312C14.6875 178.5 13.4375 177.25 13.625 175.812C13.75 175 13.375 174.187 12.75 173.75C11.5625 172.875 11.5625 171.062 12.75 170.188" stroke="#595959"/><path d="M17.125 171.688L19.25 173.875L22.8125 170.438" stroke="#A6A6A6"/></g></svg>
+            <div class="vs-txt"><div class="vs-lbl off">Approved</div></div>
+          </div>
+          <div class="vs-line" style="background:#CCCCCC"></div>
+          <div class="vs-step vs-mid" role="listitem" aria-disabled="true">
+            <svg class="vs-ico" viewBox="0 224 40 40" fill="none"><rect x="0.25" y="224.25" width="39.5" height="39.5" rx="19.75" fill="#FAFAFA" stroke="#A6A6A6" stroke-width="0.5"/><g stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M25 239V251.5L22.5625 250.25L20 251.5L17.3125 250.25L15 251.5V239H25Z" stroke="#595959"/><path d="M26.875 242.125H27.5C27.875 242.125 28.125 241.875 28.125 241.5V237.125C28.125 236.75 27.875 236.5 27.5 236.5H12.5C12.125 236.5 11.875 236.75 11.875 237.125V241.5C11.875 241.875 12.125 242.125 12.5 242.125H13.125" stroke="#A6A6A6"/><path d="M18.125 243L19.5625 244.438L21.875 242.125" stroke="#595959"/><path d="M18.125 247.125H21.875" stroke="#595959"/></g></svg>
+            <div class="vs-txt"><div class="vs-lbl off">Paid</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="delay-alert" role="status"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1B3866" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 11v6M12 7.5v.1"/></svg><span>We're getting more claims than usual right now, so processing may take 5-7 days.</span></div>
+      <div class="cal-info" style="flex-direction:column;align-items:stretch;gap:8px">
+        <div style="font-size:15px;font-weight:700">What to expect</div>
+        <ul style="margin:0 0 0 18px;line-height:1.7">
+          <li>This claim will be paid within 3-5 days or cheque: 5-15 days</li>
+          <li>Track status anytime in your Claim history</li>
+          <li>Reimbursements are added to your T4 as taxable income</li>
+          <li>We'll email you once your claim has been processed.</li>
+        </ul>
+      </div>
+      <div class="rv-card">
+        <div class="rv-row" style="padding-top:16px"><span>Updates will be sent to</span><span class="rv-v">sarah@email.com</span></div>
+        <div class="rv-row"><span>Total amount</span><span class="rv-v" id="done-amt">$120.00</span></div>
+        <div class="rv-row" style="padding-bottom:16px"><span>Reimbursed to</span><span class="rv-v">Direct deposit ···· 4821</span></div>
+      </div>
+      <button class="btn2-o" onclick="goHome()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back to home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ UNKNOWN OUTCOME ═══════════════ -->
+<div id="s-unknown" class="screen" style="gap:0;min-height:100vh">
+  <div class="fhdr" data-mode="plain"></div>
+  <div class="hifi-shell" style="padding-top:28px">
+    <div class="hifi-sheet" style="text-align:center;align-items:center">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#8a5a10" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5.5M12 16.4v.1"/></svg>
+      <div class="hifi-title">We couldn't confirm your claim</div>
+      <p style="font-size:14.5px;line-height:1.6;color:#3a3a3c;max-width:440px">Your claim may have gone through, but we didn't get a response in time. <strong>Before you submit again</strong>, check My claims on your home page so you don't send it twice.</p>
+      <p style="font-size:13px;color:var(--sub);max-width:440px">New claims can take a few minutes to appear.</p>
+      <button class="btn2" style="max-width:320px" onclick="goHome()">Check My claims</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ CLAIM DETAIL — PAID (unchanged) ═══════════════ -->
+<div id="s-claim-paid" class="screen" style="gap:0;padding-bottom:100px">
+  <div class="screen-head"><button class="back" onclick="go('s-landing')">← Back</button><div class="s-title" style="padding:14px 0">Claim details</div></div>
+  <div style="padding:0 16px;display:flex;flex-direction:column;gap:12px">
+    <div class="card" style="padding:20px 18px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><span style="display:inline-flex;align-items:center;gap:6px;background:#eef5e8;color:#2e6b12;font-size:11px;font-weight:500;padding:4px 10px;border-radius:100px;border:1px solid #c2dba8"><span style="width:6px;height:6px;border-radius:50%;background:#4d9a25"></span>Paid</span><span style="font-size:12px;color:#6e6e73">• April 21, 2026</span></div>
+      <div style="font-size:32px;font-weight:600">$96.00</div>
+      <div style="font-size:12px;color:#6e6e73;margin-top:4px">of $120.00 claimed</div>
+    </div>
+    <div class="card"><div class="sec-lbl">Status</div><div class="tracker"><div class="t-step"><div class="t-dot act">✓</div><div class="t-lbl act">Submitted</div></div><div class="t-step"><div class="t-dot act">✓</div><div class="t-lbl act">In progress</div></div><div class="t-step"><div class="t-dot act">✓</div><div class="t-lbl act">Approved</div></div><div class="t-step"><div class="t-dot act">✓</div><div class="t-lbl act">Paid</div></div></div></div>
+    <div class="card"><div class="sec-lbl">Payment breakdown</div><div class="pr-row"><span class="pr-k">You claimed</span><span class="pr-v">$120.00</span></div><div class="pr-row"><span class="pr-k">Paid by your plan</span><span class="pr-v">$96.00</span></div><div class="pr-row" style="background:#fbf9f4"><span class="pr-k" style="color:#7a5a10">Available in HCSA</span><span class="pr-v" style="color:#7a5a10">$24.00</span></div></div>
+    <div class="card"><div class="sec-lbl">Claim details</div><div class="pr-row"><span class="pr-k">Service</span><span class="pr-v">Physiotherapy</span></div><div class="pr-row"><span class="pr-k">Session length</span><span class="pr-v">60 min</span></div><div class="pr-row"><span class="pr-k">Treatment date</span><span class="pr-v">April 3, 2026</span></div><div class="pr-row"><span class="pr-k">Provider</span><span class="pr-v">Harmony Wellness</span></div><div class="pr-row"><span class="pr-k">Patient</span><span class="pr-v">Sarah M.</span></div><div class="pr-row"><span class="pr-k">Reference</span><span class="pr-v">PHY-2026-0041</span></div><div class="pr-row"><span class="pr-k">Payment type</span><span class="pr-v">Direct deposit</span></div><div class="pr-row"><span class="pr-k">Payee</span><span class="pr-v">Sarah M.</span></div></div>
+    <div class="card"><div class="sec-lbl">Documents</div><div class="pr-row"><a onclick="alert('Opening Receipt.pdf…')" style="color:#185FA5;cursor:pointer">Receipt.pdf</a><span class="pr-k">View</span></div><div class="pr-row"><a onclick="alert('Opening EOB.pdf…')" style="color:#185FA5;cursor:pointer">EOB — Explanation of Benefits</a><span class="pr-k">View</span></div></div>
+    <button class="btn" onclick="go('s-hcsa-done')">Submit remaining to HCSA</button>
+    <button onclick="go('s-landing')" style="background:none;border:none;color:#6e6e73;font-size:13px;cursor:pointer;padding:8px">Back to home</button>
+  </div>
+</div>
+<!-- ═══════════════ CLAIM DETAIL — IN PROGRESS (unchanged) ═══════════════ -->
+<div id="s-claim-in-progress" class="screen" style="gap:0;padding-bottom:100px">
+  <div class="screen-head"><button class="back" onclick="go('s-landing')">← Back</button><div class="s-title" style="padding:14px 0">Claim details</div></div>
+  <div style="padding:0 16px;display:flex;flex-direction:column;gap:12px">
+    <div class="card" style="padding:20px 18px">
+      <span style="display:inline-flex;align-items:center;gap:6px;background:#fff4e0;color:#8a5a10;font-size:11px;font-weight:500;padding:4px 10px;border-radius:100px;border:1px solid #f0d494"><span style="width:6px;height:6px;border-radius:50%;background:#d99420"></span>In progress</span>
+      <div style="font-size:32px;font-weight:600;margin-top:8px">$95.00</div>
+      <div style="font-size:12px;color:#6e6e73;margin-top:4px">claimed</div>
+      <div style="font-size:12px;color:#6e6e73;margin-top:10px;padding-top:10px;border-top:1px solid #e8e8ea">Expected within XX business days</div>
+    </div>
+    <div class="card"><div class="sec-lbl">Status</div><div class="tracker"><div class="t-step"><div class="t-dot act">✓</div><div class="t-lbl act">Submitted</div></div><div class="t-step"><div class="t-dot act">⋯</div><div class="t-lbl act">In progress</div></div><div class="t-step"><div class="t-dot">✓</div><div class="t-lbl">Approved</div></div><div class="t-step"><div class="t-dot">💳</div><div class="t-lbl">Paid</div></div></div></div>
+    <div class="card"><div class="sec-lbl">Claim details</div><div class="pr-row"><span class="pr-k">Service</span><span class="pr-v">Massage Therapy</span></div><div class="pr-row"><span class="pr-k">Session length</span><span class="pr-v">60 min</span></div><div class="pr-row"><span class="pr-k">Treatment date</span><span class="pr-v">August 6, 2026</span></div><div class="pr-row"><span class="pr-k">Provider</span><span class="pr-v">Harmony Wellness</span></div><div class="pr-row"><span class="pr-k">Patient</span><span class="pr-v">Sarah M.</span></div><div class="pr-row"><span class="pr-k">Reference</span><span class="pr-v">MSG-2026-0038</span></div><div class="pr-row"><span class="pr-k">Payment type</span><span class="pr-v">Direct deposit</span></div><div class="pr-row"><span class="pr-k">Payee</span><span class="pr-v">Sarah M.</span></div></div>
+    <div class="card"><div class="sec-lbl">Documents</div><div class="pr-row"><a onclick="alert('Opening Receipt.pdf…')" style="color:#185FA5;cursor:pointer">Receipt.pdf</a><span class="pr-k">View</span></div></div>
+    <button onclick="go('s-landing')" style="background:none;border:none;color:#6e6e73;font-size:13px;cursor:pointer;padding:8px">Back to home</button>
+  </div>
+</div>
+<!-- ═══════════════ HCSA SUBMITTED (unchanged) ═══════════════ -->
+<div id="s-hcsa-done" class="screen" style="gap:14px;padding:24px 16px">
+  <div style="text-align:center;padding:20px 0 4px"><div style="width:56px;height:56px;border-radius:50%;background:#f0faf4;border:1px solid #a8ddb8;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:24px">✓</div><div class="s-title">Sent to your Health Care Spending Account</div></div>
+  <div class="card"><div class="sec-lbl">Status &amp; next steps</div><div class="tracker"><div class="t-step"><div class="t-dot act">✓</div><div class="t-lbl act">Submitted</div></div><div class="t-step"><div class="t-dot">⋯</div><div class="t-lbl">Processing</div></div><div class="t-step"><div class="t-dot">💳</div><div class="t-lbl">Paid</div></div></div></div>
+  <div class="card"><div class="pr-row"><span class="pr-k">Claim reference</span><span class="pr-v">HCSA-2026-03312</span></div><div class="pr-row"><span class="pr-k">Amount submitted</span><span class="pr-v">$24.00</span></div><div class="pr-row"><span class="pr-k">Reimbursed to</span><span class="pr-v">Direct deposit ···· 4821</span></div></div>
+  <button onclick="go('s-landing')" style="background:none;border:none;color:#6e6e73;font-size:13px;cursor:pointer;padding:8px">Back to home</button>
+</div>
+</div><!-- end .wf -->
+
+<footer class="gfooter">
+  <div class="gf-top">
+    <nav class="gf-links" aria-label="Footer">
+      <a onclick="alert('Opening Terms of use…')">Terms of use<svg class="gf-ext" width="16" height="16" viewBox="278 36 16 16" fill="#003538" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M281.333 40.6667C281.157 40.6667 280.987 40.7369 280.862 40.8619C280.737 40.987 280.667 41.1565 280.667 41.3333V48.6667C280.667 48.8435 280.737 49.0131 280.862 49.1381C280.987 49.2631 281.157 49.3333 281.333 49.3333H288.667C288.844 49.3333 289.013 49.2631 289.138 49.1381C289.263 49.0131 289.333 48.8435 289.333 48.6667V44.6667C289.333 44.2985 289.632 44 290 44C290.368 44 290.667 44.2985 290.667 44.6667V48.6667C290.667 49.1971 290.456 49.7058 290.081 50.0809C289.706 50.456 289.197 50.6667 288.667 50.6667H281.333C280.803 50.6667 280.294 50.456 279.919 50.0809C279.544 49.7058 279.333 49.1971 279.333 48.6667V41.3333C279.333 40.8029 279.544 40.2942 279.919 39.9191C280.294 39.5441 280.803 39.3333 281.333 39.3333H285.333C285.702 39.3333 286 39.6318 286 40C286 40.3682 285.702 40.6667 285.333 40.6667H281.333Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M287.333 38C287.333 37.6318 287.632 37.3333 288 37.3333H292C292.368 37.3333 292.667 37.6318 292.667 38V42C292.667 42.3682 292.368 42.6667 292 42.6667C291.632 42.6667 291.333 42.3682 291.333 42V38.6667H288C287.632 38.6667 287.333 38.3682 287.333 38Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M292.471 37.5286C292.732 37.789 292.732 38.2111 292.471 38.4714L285.138 45.8047C284.878 46.0651 284.456 46.0651 284.195 45.8047C283.935 45.5444 283.935 45.1223 284.195 44.8619L291.529 37.5286C291.789 37.2683 292.211 37.2683 292.471 37.5286Z"/></svg></a>
+      <a onclick="alert('Opening Legal and online privacy…')">Legal and online privacy<svg class="gf-ext" width="16" height="16" viewBox="278 36 16 16" fill="#003538" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M281.333 40.6667C281.157 40.6667 280.987 40.7369 280.862 40.8619C280.737 40.987 280.667 41.1565 280.667 41.3333V48.6667C280.667 48.8435 280.737 49.0131 280.862 49.1381C280.987 49.2631 281.157 49.3333 281.333 49.3333H288.667C288.844 49.3333 289.013 49.2631 289.138 49.1381C289.263 49.0131 289.333 48.8435 289.333 48.6667V44.6667C289.333 44.2985 289.632 44 290 44C290.368 44 290.667 44.2985 290.667 44.6667V48.6667C290.667 49.1971 290.456 49.7058 290.081 50.0809C289.706 50.456 289.197 50.6667 288.667 50.6667H281.333C280.803 50.6667 280.294 50.456 279.919 50.0809C279.544 49.7058 279.333 49.1971 279.333 48.6667V41.3333C279.333 40.8029 279.544 40.2942 279.919 39.9191C280.294 39.5441 280.803 39.3333 281.333 39.3333H285.333C285.702 39.3333 286 39.6318 286 40C286 40.3682 285.702 40.6667 285.333 40.6667H281.333Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M287.333 38C287.333 37.6318 287.632 37.3333 288 37.3333H292C292.368 37.3333 292.667 37.6318 292.667 38V42C292.667 42.3682 292.368 42.6667 292 42.6667C291.632 42.6667 291.333 42.3682 291.333 42V38.6667H288C287.632 38.6667 287.333 38.3682 287.333 38Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M292.471 37.5286C292.732 37.789 292.732 38.2111 292.471 38.4714L285.138 45.8047C284.878 46.0651 284.456 46.0651 284.195 45.8047C283.935 45.5444 283.935 45.1223 284.195 44.8619L291.529 37.5286C291.789 37.2683 292.211 37.2683 292.471 37.5286Z"/></svg></a>
+      <a onclick="alert('Opening Equitable.ca…')">Equitable.ca<svg class="gf-ext" width="16" height="16" viewBox="278 36 16 16" fill="#003538" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M281.333 40.6667C281.157 40.6667 280.987 40.7369 280.862 40.8619C280.737 40.987 280.667 41.1565 280.667 41.3333V48.6667C280.667 48.8435 280.737 49.0131 280.862 49.1381C280.987 49.2631 281.157 49.3333 281.333 49.3333H288.667C288.844 49.3333 289.013 49.2631 289.138 49.1381C289.263 49.0131 289.333 48.8435 289.333 48.6667V44.6667C289.333 44.2985 289.632 44 290 44C290.368 44 290.667 44.2985 290.667 44.6667V48.6667C290.667 49.1971 290.456 49.7058 290.081 50.0809C289.706 50.456 289.197 50.6667 288.667 50.6667H281.333C280.803 50.6667 280.294 50.456 279.919 50.0809C279.544 49.7058 279.333 49.1971 279.333 48.6667V41.3333C279.333 40.8029 279.544 40.2942 279.919 39.9191C280.294 39.5441 280.803 39.3333 281.333 39.3333H285.333C285.702 39.3333 286 39.6318 286 40C286 40.3682 285.702 40.6667 285.333 40.6667H281.333Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M287.333 38C287.333 37.6318 287.632 37.3333 288 37.3333H292C292.368 37.3333 292.667 37.6318 292.667 38V42C292.667 42.3682 292.368 42.6667 292 42.6667C291.632 42.6667 291.333 42.3682 291.333 42V38.6667H288C287.632 38.6667 287.333 38.3682 287.333 38Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M292.471 37.5286C292.732 37.789 292.732 38.2111 292.471 38.4714L285.138 45.8047C284.878 46.0651 284.456 46.0651 284.195 45.8047C283.935 45.5444 283.935 45.1223 284.195 44.8619L291.529 37.5286C291.789 37.2683 292.211 37.2683 292.471 37.5286Z"/></svg></a>
+    </nav>
+  </div>
+</footer>
+
+<!-- ═══════════════ LEAVE CLAIM DIALOG ═══════════════ -->
+<div class="mdl-ov" id="leave-ov" onclick="if(event.target===this)closeLeave()">
+  <div class="mdl" role="alertdialog" aria-modal="true" aria-labelledby="leave-t" aria-describedby="leave-b">
+    <div class="mdl-t" id="leave-t"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00666F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg>Leave without submitting?</div>
+    <div class="mdl-b" id="leave-b">Your claim hasn't been sent yet. If you leave now, your receipt and details won't be saved.</div>
+    <div class="mdl-acts">
+      <button class="mdl-link" onclick="confirmLeave()">Leave claim</button>
+      <button class="btn2" id="leave-stay" onclick="closeLeave()">Stay and finish</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ DIRECT DEPOSIT EDIT PANEL (from v31) ═══════════════ -->
+<div id="edit-overlay" class="overlay" onclick="closeEditPanel()"></div>
+<div id="edit-panel-deposit" class="edit-panel" role="dialog" aria-modal="true" aria-labelledby="ep-dep-title">
+  <div class="ep-head"><div class="ep-title" id="ep-dep-title">Direct deposit</div><button class="ep-close" aria-label="Close" onclick="closeEditPanel()">✕</button></div>
+  <div class="ep-body">
+    <div><label class="ep-field-lbl" for="ep-transit" style="display:block">Transit</label><input class="ep-fi-plain" type="text" inputmode="numeric" maxlength="5" placeholder="5 digits" id="ep-transit"/></div>
+    <div><label class="ep-field-lbl" for="ep-bank" style="display:block">Bank</label><input class="ep-fi-plain" type="text" inputmode="numeric" maxlength="3" placeholder="3 digits" id="ep-bank"/></div>
+    <div><label class="ep-field-lbl" for="ep-account" style="display:block">Account</label><input class="ep-fi-plain" type="text" inputmode="numeric" maxlength="12" placeholder="7 to 12 digits" id="ep-account"/></div>
+  </div>
+  <div class="ep-foot">
+    <button class="ep-save" onclick="closeEditPanel()">Save</button>
+    <button class="ep-cancel" onclick="closeEditPanel()">Cancel</button>
+  </div>
+</div>
+
+<!-- ═══════════════ BROWSE ACTION SHEET ═══════════════ -->
+<div id="bsheet-overlay" class="bsheet-overlay" onclick="closeBrowseSheet()"></div>
+<div id="bsheet" class="bsheet">
+  <div class="bsheet-card">
+    <div class="bsheet-title">Add a photo</div>
+    <button class="bsheet-opt" onclick="pickBrowseOption()">Take a photo</button>
+    <button class="bsheet-opt" onclick="pickBrowseOption()">Choose from gallery</button>
+    <button class="bsheet-opt" onclick="pickBrowseOption()">Upload a file</button>
+  </div>
+  <button class="bsheet-cancel" onclick="closeBrowseSheet()">Cancel</button>
+</div>
+
+<!-- ═══════════════ ELIGIBLE EXPENSES ═══════════════ -->
+<div id="es-overlay" class="es-overlay" onclick="closeEligibleSheet()"></div>
+<div id="esheet" class="esheet" data-state="half" role="dialog" aria-modal="true" aria-labelledby="es-title">
+  <div class="es-head">
+    <div class="es-grab" onclick="esheet.dataset.state=esheet.dataset.state==='full'?'half':'full'"><div class="es-handle"></div></div>
+    <div class="es-headrow"><div class="es-title" id="es-title">Eligible expenses</div><button type="button" class="es-close" aria-label="Close" onclick="closeEligibleSheet()">✕</button></div>
+  </div>
+  <div class="es-body" id="es-body">
+    <div class="cal-info" style="margin-top:16px"><span style="font-size:15px">ⓘ</span><span>This is a general list of commonly eligible expenses. What's covered can vary based on your policy, so check your benefits booklet if you're unsure.</span></div>
+    <div class="es-search"><input class="fi srch" id="es-search" type="text" placeholder="Search eligible expenses" aria-label="Search eligible expenses" autocomplete="off"/></div>
+    <div id="es-list"></div>
+    <div id="es-empty" class="es-empty" role="status">No matches. Check your benefits booklet if you're unsure.</div>
+    <div class="es-foot">Don't see yours? Check your benefits booklet.</div>
+  </div>
+</div>
+
+<!-- ═══════════════ WHAT'S NEW ═══════════════ -->
+<div id="wn-overlay" class="wn-overlay" onclick="if(event.target===this)closeWhatsNew()">
+  <div class="wn-modal" role="dialog" aria-modal="true" aria-labelledby="wn-title">
+    <div class="wn-hero">
+      <button class="wn-hero-close" onclick="closeWhatsNew()" aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+      <div class="wn-hero-badge"><svg width="16" height="16" viewBox="8.4 8.4 15.2 14.6" fill="#1B3866" aria-hidden="true"><path fill-rule="evenodd" d="M16 8.67c.25 0 .49.14.6.37l1.9 3.86 4.26.62c.25.04.46.21.54.45.08.24.01.51-.17.68l-3.08 3 .73 4.25c.04.25-.06.5-.27.65-.2.15-.48.17-.7.05L16 20.6l-3.81 2c-.22.12-.5.1-.7-.05-.21-.15-.31-.4-.27-.65l.73-4.24-3.08-3c-.18-.18-.25-.44-.17-.69.08-.24.29-.41.54-.45l4.26-.62 1.9-3.86c.11-.23.35-.37.6-.37Zm0 2.17-1.46 2.96c-.1.2-.29.33-.5.37l-3.27.47 2.37 2.3c.15.16.23.38.19.6l-.56 3.25 2.92-1.54c.2-.1.42-.1.62 0l2.92 1.54-.56-3.25c-.04-.22.04-.44.19-.6l2.37-2.3-3.27-.47c-.21-.04-.4-.17-.5-.37L16 10.84Z"/></svg>What’s new</div>
+      <div class="wn-hero-title" id="wn-title">A redesigned claims experience</div>
+      <div class="wn-hero-sub">We're starting to roll out a redesigned claims experience. It's available for some claim types for now, and we'll add more over time.</div>
+    </div>
+    <div class="wn-body">
+      <div class="wn-box">
+        <div><div class="wn-box-t">New claim submission</div><div class="wn-box-d">A guided, step-by-step way to submit a claim. We're adding it to plans gradually. When it's ready for yours, you'll find it under <strong>Submit a new claim</strong>.</div></div>
+        <div><div class="wn-box-t">Classic claim submission</div><div class="wn-box-d">The way you submit claims today is still available.</div></div>
+      </div>
+      <div class="wn-sec"><div class="wn-sec-t">Where to find it</div><ul><li>If the redesigned experience is available for your plan, select the arrow on <strong>Submit a new claim</strong> to choose between the two.</li></ul></div>
+      <div class="wn-sec"><div class="wn-sec-t">Don't see these options?</div><ul><li>You don't need to do anything. You can keep submitting claims the same way you always have.</li></ul></div>
+      <div class="wn-sec"><div class="wn-sec-t">Coming soon</div><ul><li>More claim types will be added to the redesigned experience over time.</li></ul></div>
+    </div>
+    <div class="wn-foot"><div class="wn-btnrow"><button class="btn2-o" onclick="closeWhatsNew()">Maybe later</button><button class="btn2" onclick="dontShowAgain()">Don’t show again</button></div></div>
+  </div>
+</div>
+<!-- ═══════════════ DEMO CONTROLS (Shift + D) ═══════════════ -->
+<div class="demo" id="demo" aria-label="Demo controls">
+  <h4>Demo controls <span style="cursor:pointer" onclick="toggleDemo()">✕</span></h4>
+  <label for="d-up">Next receipt upload</label>
+  <select id="d-up"><option value="ok">Success</option><option value="type">Wrong file type</option><option value="size">File too large</option><option value="read">Unreadable file</option><option value="net">Upload interrupted</option></select>
+  <label for="d-sub">Next submit</label>
+  <select id="d-sub"><option value="ok">Success</option><option value="fail">Submission failed</option><option value="unknown">Unknown outcome (timeout)</option></select>
+  <small>Shift + D: open/close this panel<br>Shift + T: show leave pop-up<br>Choices reset to Success after one use.</small>
+</div>
+
+<script>
+/* ══════════════════ HEADER + STEPPER (shared markup) ══════════════════ */
+const WN_BTN=`<button class="wn-trigger" onclick="openWhatsNew()" aria-label="What's new"><svg width="16" height="16" viewBox="8.4 8.4 15.2 14.6" fill="#1B3866" aria-hidden="true"><path fill-rule="evenodd" d="M16 8.67c.25 0 .49.14.6.37l1.9 3.86 4.26.62c.25.04.46.21.54.45.08.24.01.51-.17.68l-3.08 3 .73 4.25c.04.25-.06.5-.27.65-.2.15-.48.17-.7.05L16 20.6l-3.81 2c-.22.12-.5.1-.7-.05-.21-.15-.31-.4-.27-.65l.73-4.24-3.08-3c-.18-.18-.25-.44-.17-.69.08-.24.29-.41.54-.45l4.26-.62 1.9-3.86c.11-.23.35-.37.6-.37Zm0 2.17-1.46 2.96c-.1.2-.29.33-.5.37l-3.27.47 2.37 2.3c.15.16.23.38.19.6l-.56 3.25 2.92-1.54c.2-.1.42-.1.62 0l2.92 1.54-.56-3.25c-.04-.22.04-.44.19-.6l2.37-2.3-3.27-.47c-.21-.04-.4-.17-.5-.37L16 10.84Z"/></svg>What's new</button>`;
+const HOME_BTN=`<button class="hdr-home" onclick="headerHome()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back to home</button>`;
+const LANG=`<button class="hdr-lang" onclick="alert('Language switching isn\\'t part of this demo.')" aria-label="Language: English"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.6 2.8 2.6 16.2 0 19M12 2.5c-2.6 2.8-2.6 16.2 0 19"/></svg><span class="hdr-lang-txt">English</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>`;
+const AV=`<div class="hdr-av" aria-label="Profile">OP</div>`;
+document.querySelectorAll('.fhdr').forEach(el=>{
+  const m=el.dataset.mode;
+  el.className='landing-header';
+  el.innerHTML=`<span></span><div class="landing-nav">${m==='home'?WN_BTN:HOME_BTN}${LANG}${AV}</div>`;
+});
+const STEP_LBL=['Upload your receipt','Details (TSA)','Review &amp; submit'];
+document.querySelectorAll('.nstep').forEach(el=>{
+  const s=+el.dataset.step;let h='';
+  for(let i=1;i<=3;i++){
+    const st=i<s?'done':i===s?'act':'';
+    h+=`<div class="nst ${st}"${i===s?' aria-current="step"':''}><div class="nst-dot">${i<s?'✓':i}</div><div class="nst-lbl">${STEP_LBL[i-1]}</div></div>`;
+    if(i<3)h+=`<div class="nst-line ${i<s?'done':''}"></div>`;
+  }
+  el.className='nstep-wrap';el.innerHTML=h;
+});
+
+/* ══════════════════ STATE + NAV ══════════════════ */
+const FLOW=['s-tsa-upload','s-tsa-details','s-review2'];
+let receiptUploaded=false;
+function cur(){return document.querySelector('.screen.active').id;}
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  closeCal();toggleTip(null,false);
+}
+function isDirty(){return receiptUploaded||!!document.getElementById('tsa-date').value||!!document.getElementById('tsa-amount').value;}
+function startTSA(){resetAll();go('s-tsa-upload');}
+function goHome(){resetAll();go('s-landing');}
+function headerHome(){FLOW.includes(cur())?leaveCheck(goHome):goHome();}
+window.addEventListener('beforeunload',e=>{if(FLOW.includes(cur())&&isDirty()){e.preventDefault();e.returnValue='';}});
+
+/* ══════════════════ LEAVE DIALOG ══════════════════ */
+let leaveAction=null,lastFocus=null;
+function leaveCheck(fn){
+  if(!isDirty()){fn();return;}
+  showLeave(fn);
+}
+function showLeave(fn){
+  leaveAction=fn;lastFocus=document.activeElement;
+  document.getElementById('leave-ov').classList.add('vis');
+  setTimeout(()=>document.getElementById('leave-stay').focus(),30);
+}
+function closeLeave(){document.getElementById('leave-ov').classList.remove('vis');leaveAction=null;if(lastFocus)lastFocus.focus();}
+function confirmLeave(){const fn=leaveAction;document.getElementById('leave-ov').classList.remove('vis');leaveAction=null;if(fn)fn();}
+
+/* ══════════════════ UPLOAD ══════════════════ */
+const UP_ERR={
+  type:'This file type isn\'t supported. Upload a PDF, PNG, BMP, JPG or TIFF file.',
+  size:'This file is larger than 10 MB. Try a smaller file or take a new photo.',
+  read:'We couldn\'t read this file. Try another photo or file.',
+  net:'Your upload didn\'t finish. Check your connection and try again.',
+  none:'Upload your receipt to continue.'
+};
+function openBrowseSheet(){document.getElementById('bsheet-overlay').classList.add('vis');document.getElementById('bsheet').classList.add('vis');}
+function closeBrowseSheet(){document.getElementById('bsheet-overlay').classList.remove('vis');document.getElementById('bsheet').classList.remove('vis');}
+function showUpErr(k){
+  document.getElementById('upz').classList.add('has-err');
+  document.getElementById('up-err-txt').textContent=UP_ERR[k];
+  document.getElementById('up-retry').style.display=k==='none'?'none':'inline';
+  document.getElementById('up-err').classList.add('vis');
+}
+function clearUpErr(){document.getElementById('upz').classList.remove('has-err');document.getElementById('up-err').classList.remove('vis');}
+function pickBrowseOption(){
+  closeBrowseSheet();clearUpErr();
+  receiptUploaded=false;document.getElementById('tsa-receipt-ok').classList.remove('vis');
+  const sel=document.getElementById('d-up'),res=sel.value;sel.value='ok';
+  if(res==='type'||res==='size'){showUpErr(res);return;}
+  const prog=document.getElementById('up-prog'),bar=document.getElementById('up-bar');
+  prog.classList.add('vis');bar.style.transition='none';bar.style.width='0';
+  requestAnimationFrame(()=>{bar.style.transition='width 1.1s linear';bar.style.width=res==='net'?'55%':'100%';});
+  setTimeout(()=>{
+    prog.classList.remove('vis');
+    if(res==='ok'){receiptUploaded=true;document.getElementById('tsa-receipt-ok').classList.add('vis');}
+    else showUpErr(res);
+  },res==='net'?700:1150);
+}
+function uploadContinue(){if(!receiptUploaded){showUpErr('none');return;}clearUpErr();go('s-tsa-details');}
+
+/* ══════════════════ DATE FIELD ══════════════════ */
+const dateIn=document.getElementById('tsa-date');
+const TODAY=new Date();TODAY.setHours(0,0,0,0);
+function fmtDateInput(v){const d=v.replace(/\D/g,'').slice(0,8);let o=d.slice(0,4);if(d.length>4)o+=' / '+d.slice(4,6);if(d.length>6)o+=' / '+d.slice(6,8);return o;}
+dateIn.addEventListener('input',()=>{dateIn.value=fmtDateInput(dateIn.value);if(fldErr('date'))validateDate();});
+dateIn.addEventListener('blur',()=>{if(dateIn.value)validateDate();});
+function parseDate(){const d=dateIn.value.replace(/\D/g,'');if(d.length!==8)return null;const y=+d.slice(0,4),m=+d.slice(4,6),da=+d.slice(6,8);const dt=new Date(y,m-1,da);if(dt.getFullYear()!==y||dt.getMonth()!==m-1||dt.getDate()!==da||y<1900)return null;return dt;}
+function setErr(f,msg){const el=document.getElementById('fld-'+f);el.classList.toggle('err',!!msg);document.getElementById(f==='date'?'date-err':'amt-err').textContent=msg||'';document.getElementById(f==='date'?'tsa-date':'tsa-amount').setAttribute('aria-invalid',msg?'true':'false');return !msg;}
+function fldErr(f){return document.getElementById('fld-'+f).classList.contains('err');}
+function validateDate(){
+  if(!dateIn.value.trim())return setErr('date','Date is required.');
+  const dt=parseDate();
+  if(!dt)return setErr('date','Enter a real date, like 2026 / 08 / 06.');
+  if(dt>TODAY)return setErr('date','The date can\'t be in the future.');
+  return setErr('date','');
+}
+/* Calendar with month + year jump, future disabled */
+let calY,calM;
+const cal=document.getElementById('cal');
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function toggleCal(e){e.stopPropagation();cal.classList.contains('vis')?closeCal():openCal();}
+function openCal(){let d=parseDate()||TODAY;if(d>TODAY||d.getFullYear()<TODAY.getFullYear()-10)d=TODAY;calY=d.getFullYear();calM=d.getMonth();renderCal();cal.classList.add('vis');}
+function closeCal(){cal.classList.remove('vis');}
+function renderCal(){
+  const sel=parseDate();
+  let yo='';for(let y=TODAY.getFullYear();y>=TODAY.getFullYear()-10;y--)yo+=`<option ${y===calY?'selected':''}>${y}</option>`;
+  let mo='';MONTHS.forEach((n,i)=>{const dis=calY===TODAY.getFullYear()&&i>TODAY.getMonth();mo+=`<option value="${i}" ${i===calM?'selected':''} ${dis?'disabled':''}>${n}</option>`;});
+  let g=['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const first=new Date(calY,calM,1).getDay(),days=new Date(calY,calM+1,0).getDate();
+  for(let i=0;i<first;i++)g+='<div></div>';
+  for(let d=1;d<=days;d++){
+    const dt=new Date(calY,calM,d),fut=dt>TODAY;
+    const c=(sel&&+sel===+dt?' sel':'')+(+dt===+TODAY?' today':'');
+    g+=`<button type="button" class="cal-d${c}" ${fut?'disabled aria-disabled="true"':''} onclick="pickDay(${d})" aria-label="${MONTHS[calM]} ${d}, ${calY}">${d}</button>`;
+  }
+  cal.innerHTML=`<div class="cal-hd"><select aria-label="Month" onchange="calM=+this.value;renderCal()">${mo}</select><select aria-label="Year" onchange="calY=+this.value;if(calY===TODAY.getFullYear()&&calM>TODAY.getMonth())calM=TODAY.getMonth();renderCal()">${yo}</select></div><div class="cal-grid">${g}</div><div class="cal-note">Future dates can't be selected.</div>`;
+}
+function pickDay(d){const p=n=>String(n).padStart(2,'0');dateIn.value=`${calY} / ${p(calM+1)} / ${p(d)}`;closeCal();validateDate();dateIn.focus();}
+document.addEventListener('click',e=>{if(cal.classList.contains('vis')&&!cal.contains(e.target))closeCal();});
+
+/* ══════════════════ AMOUNT FIELD ══════════════════ */
+const amtIn=document.getElementById('tsa-amount');
+function parseAmt(v){
+  v=v.replace(/[^\d.,]/g,'');
+  if(!v.includes('.')&&/,\d{1,2}$/.test(v))v=v.replace(/,(\d{1,2})$/,'.$1'); // French decimal comma
+  v=v.replace(/,/g,'');
+  return v===''?null:parseFloat(v);
+}
+amtIn.addEventListener('input',()=>{
+  let v=amtIn.value.replace(/[^\d.,]/g,'');
+  const i=v.indexOf('.');if(i>-1)v=v.slice(0,i+1)+v.slice(i+1).replace(/[.,]/g,'').slice(0,2);
+  amtIn.value=v;if(fldErr('amt'))validateAmt();
+});
+amtIn.addEventListener('focus',()=>{if(amtIn.value)amtIn.value=amtIn.value.replace(/,/g,'');});
+amtIn.addEventListener('blur',()=>{if(!amtIn.value)return;const n=parseAmt(amtIn.value);if(n!==null&&!isNaN(n))amtIn.value=n.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});validateAmt();});
+function validateAmt(){
+  if(!amtIn.value.trim())return setErr('amt','Amount is required.');
+  const n=parseAmt(amtIn.value);
+  if(n===null||isNaN(n))return setErr('amt','Use numbers only, like 120.00.');
+  if(n<=0)return setErr('amt','Enter an amount more than $0.');
+  return setErr('amt','');
+}
+function toggleTip(e,force){
+  if(e)e.stopPropagation();
+  const t=document.getElementById('tip'),b=document.querySelector('.tip-btn');
+  const show=force===undefined?!t.classList.contains('vis'):force;
+  t.classList.toggle('vis',show);if(b)b.setAttribute('aria-expanded',show);
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.tip'))toggleTip(null,false);});
+function detailsContinue(){
+  const okD=validateDate(),okA=validateAmt();
+  if(!okD){dateIn.focus();return;}
+  if(!okA){amtIn.focus();return;}
+  const n=parseAmt(amtIn.value),amt='$'+n.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('r2-amt').textContent=amt;
+  document.getElementById('done-amt').textContent=amt;
+  document.getElementById('r2-date').textContent=parseDate().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('sub-err').classList.remove('vis');
+  go('s-review2');
+}
+
+/* ══════════════════ SUBMIT ══════════════════ */
+function ackErr(on){document.getElementById('ack-err').classList.toggle('vis',on);document.getElementById('r2-ack').setAttribute('aria-invalid',on?'true':'false');}
+function submitClaim(){
+  const ack=document.getElementById('r2-ack');
+  if(!ack.checked){ackErr(true);ack.focus();return;}
+  const btn=document.getElementById('submit-btn');
+  if(btn.disabled)return;
+  btn.disabled=true;btn.innerHTML='<span class="spin" aria-hidden="true"></span>Submitting…';
+  document.getElementById('sub-err').classList.remove('vis');
+  const sel=document.getElementById('d-sub'),res=sel.value;sel.value='ok';
+  setTimeout(()=>{
+    btn.disabled=false;btn.textContent='Submit claim';
+    if(res==='fail'){const e=document.getElementById('sub-err');e.classList.add('vis');window.scrollTo(0,0);e.focus();return;}
+    receiptUploaded=false; // claim is out of the user's hands now
+    if(res==='unknown'){go('s-unknown');return;}
+    document.getElementById('sub-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    go('s-done-tsa2');
+  },res==='unknown'?2600:1500);
+}
+
+/* ══════════════════ EDIT PANEL (direct deposit) ══════════════════ */
+function openEditPanel(which){document.getElementById('edit-overlay').classList.add('vis');document.getElementById('edit-panel-'+which).classList.add('vis');}
+function closeEditPanel(){document.querySelectorAll('.edit-panel').forEach(p=>p.classList.remove('vis'));document.getElementById('edit-overlay').classList.remove('vis');}
+/* ══════════════════ KEYBOARD ══════════════════ */
+function toggleDemo(){document.getElementById('demo').classList.toggle('vis');}
+document.addEventListener('keydown',e=>{
+  if(e.shiftKey&&!e.target.matches('input,select')){
+    if(e.key==='D'){toggleDemo();return;}
+    if(e.key==='T'){showLeave(goHome);return;}
+  }
+  if(e.key==='Escape'){
+    if(document.getElementById('leave-ov').classList.contains('vis'))closeLeave();
+    else if(document.getElementById('edit-overlay').classList.contains('vis'))closeEditPanel();
+    else if(cal.classList.contains('vis'))closeCal();
+    else if(document.getElementById('wn-overlay').classList.contains('vis'))closeWhatsNew();
+    else if(esheet.classList.contains('vis'))closeEligibleSheet();
+    toggleTip(null,false);
+  }
+});
+
+/* ══════════════════ RESET ══════════════════ */
+function resetAll(){
+  receiptUploaded=false;
+  document.getElementById('tsa-receipt-ok').classList.remove('vis');clearUpErr();
+  dateIn.value='';amtIn.value='';setErr('date','');setErr('amt','');
+  document.getElementById('r2-ack').checked=false;ackErr(false);
+  document.getElementById('sub-err').classList.remove('vis');
+}
+
+/* ══════════════════ WHAT'S NEW ══════════════════ */
+let wnSuppressed=false;
+try{wnSuppressed=sessionStorage.getItem('wn-dismissed')==='1';}catch(e){}
+function openWhatsNew(){document.getElementById('wn-overlay').classList.add('vis');}
+function closeWhatsNew(){document.getElementById('wn-overlay').classList.remove('vis');}
+function dontShowAgain(){wnSuppressed=true;try{sessionStorage.setItem('wn-dismissed','1');}catch(e){}closeWhatsNew();}
+if(!wnSuppressed)setTimeout(()=>{if(!wnSuppressed&&cur()==='s-landing')openWhatsNew();},900);
+
+/* ══════════════════ SUBMIT MENU ══════════════════ */
+function toggleSubmitMenu(e){e.stopPropagation();document.getElementById('submit-menu').classList.toggle('open');e.currentTarget.classList.toggle('open');}
+function closeSubmitMenu(){document.getElementById('submit-menu').classList.remove('open');document.querySelector('.submit-claim-btn').classList.remove('open');}
+document.addEventListener('click',e=>{const m=document.getElementById('submit-menu');if(m.classList.contains('open')&&!m.contains(e.target)&&!e.target.closest('.submit-claim-btn'))closeSubmitMenu();});
+
+/* ══════════════════ HOME CLAIM CARDS ══════════════════ */
+const HOME_CLAIMS=[
+  {status:'Paid',paid:true,claimed:'$120.00',paidAmt:'$96.00',service:'Taxable Spending Account (TSA)',claimNo:'H12345',received:'Month DD, YYYY',paymentSent:'Month DD, YYYY',dependents:'Alexandra, James, Cristopher, Emmanuel, Leonardo …',view:'s-claim-paid'},
+  {status:'In progress',paid:false,claimed:'$95.00',service:'Massage Therapy',claimNo:'H12346',received:'Month DD, YYYY',dependents:'Alexandra, James',view:'s-claim-in-progress'}
+];
+let homeIdx=0;
+function renderClaimCard(){
+  const c=HOME_CLAIMS[homeIdx];
+  const bar=(lbl,v,col)=>`<div style="display:flex;align-items:center;gap:7px"><div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font-size:10px;color:#9e9a94">${lbl}</span><span style="font-size:15px;font-weight:500">${v}</span></div><div style="width:3px;height:30px;border-radius:2px;background:${col}"></div></div>`;
+  const amt=c.paid?`<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">${bar('Claimed',c.claimed,'#3a7fd4')}${bar('Paid',c.paidAmt,'#4d9a25')}</div>`:bar('Claimed',c.claimed,'#3a7fd4');
+  const pill=c.paid?'background:#eaf5e9;color:#276b1f;border-color:#c2dba8':'background:#fff4e0;color:#8a5a10;border-color:#f0d494';
+  const icon=c.paid?'<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.8L5.8 21l1.6-7L2 9.2l7.1-.6z"/></svg>':'<span style="width:6px;height:6px;border-radius:50%;background:#d99420;display:inline-block"></span>';
+  let lines=`<p style="font-size:12.5px;color:#6b6862"><strong style="color:#1a1917;font-weight:500">Received:</strong> ${c.received}</p>`;
+  lines+=c.paid?`<p style="font-size:12.5px;color:#6b6862"><strong style="color:#1a1917;font-weight:500">Payment issued:</strong> ${c.paymentSent}</p>`:`<p style="font-size:11px;color:#9e9a94;font-style:italic">Expected within XX business days</p>`;
+  document.getElementById('claim-card-body').innerHTML=`<div style="font-size:11px;font-weight:500;color:#9e9a94;letter-spacing:.04em;text-transform:uppercase;margin-bottom:12px">Recent claims</div><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><span class="pill2" style="${pill}">${icon}${c.status}</span>${amt}</div><p style="font-size:17px;font-weight:500;margin-bottom:3px">${c.service}</p><p style="font-size:12px;color:#9e9a94;margin-bottom:12px">Claim number: ${c.claimNo}</p><hr style="border:none;border-top:1px solid #e4e2de;margin-bottom:12px"/><div style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px">${lines}</div><div class="deplist" style="margin-bottom:14px">${c.dependents}</div>`;
+  document.getElementById('claim-card-actions').innerHTML=`<button class="btn2-o" onclick="go('${c.view}')">View claim</button>`;
+  document.getElementById('pgn-back').classList.toggle('dis',homeIdx===0);
+  document.getElementById('pgn-next').classList.toggle('dis',homeIdx===HOME_CLAIMS.length-1);
+}
+function claimPage(d){const n=homeIdx+d;if(n<0||n>=HOME_CLAIMS.length)return;homeIdx=n;renderClaimCard();}
+renderClaimCard();
+
+/* ══════════════════ ELIGIBLE EXPENSES ══════════════════ */
+const ES_DATA=[
+  {n:'Fitness',items:['Camping fees and equipment','Dance lessons','Fishing licence and equipment','Fitness assessments','Sports apparel','Bicycles','Exercise equipment','Gym memberships','Personal trainers','Golf','Race fees','Riding','Recreational clubs','Skiing and snowboarding','Sports safety equipment','Wellness programs']},
+  {n:'Health',items:['Counselling','Alternative wellness services','Breast pumps','Certain dental and cosmetic items','Medical cannabis (specific requirements apply)','Over-the-counter items','Sleep assessment','Beds and mattresses','Health screening','Maternity services','Nutrition and preventive wellness programs','Sunscreen','Thermometers','Veterinary fees','Weight-loss supports']},
+  {n:'Indigenous Healers and Elders services',items:['Traditional medicines such as cedar, sage, sweetgrass and tobacco plant','Ceremony items and fees, including sweat lodges, healing circles, smudge kits and cloth']},
+  {n:'Work-life balance',items:['Childcare and elder care','Caregiver programs','Day camp and daycare','Car seats','Home care','Meals on Wheels','Nursing and retirement-home expenses','Transit passes','Respite care','Subscription services','Hospital telephone and television','Qualifying travel for family care']},
+  {n:'Insurance',items:['Insurance premiums, except employee-paid group long-term disability','Pet insurance premiums']},
+  {n:'Professional development',items:['General-interest and first aid/CPR classes','Language training','Financial counselling','Legal fees','Parking','Tuition, exams, school supplies and tutoring','Technology and accessories','Internet and professional memberships','Qualifying travel, lodging and meals','Will preparation']},
+  {n:'Other expenses',items:['Arts and hobby lessons and supplies','Audio-visual systems','Budgeting services','Registered account contributions','Driving instruction','Certain document-change charges','Household appliances','Maintenance and environmental supports','Recreational activities','Pet expenses','Equipment repairs','Tax preparation','Tools','Vehicle costs','Work equipment and furniture']},
+  {n:'Generally not covered',nope:true,items:['Alcohol','Cannabis that is not medically required','Computer repairs not completed by a legitimate company with an invoice','Donations to individuals or charities','Expenses outside Canada, except eligible U.S. items','Flotation devices and flying lessons','Weapons and ammunition','Jewellery other than a fitness tracker','Payment for an event that has not yet taken place','Stocks and stock-market trading','Tobacco and vape products (Indigenous services exception applies)','Used items bought through private marketplaces without a certified receipt']}
+];
+const esheet=document.getElementById('esheet'),esSearch=document.getElementById('es-search'),esOpen=new Set();
+function esHi(t,q){if(!q)return t.replace(/</g,'&lt;');const i=t.toLowerCase().indexOf(q);return i<0?t:t.slice(0,i)+'<mark>'+t.slice(i,i+q.length)+'</mark>'+t.slice(i+q.length);}
+function esRender(){
+  const q=esSearch.value.trim().toLowerCase();let h='',shown=0;
+  ES_DATA.forEach((c,ci)=>{
+    const ch=q&&c.n.toLowerCase().includes(q);
+    const items=c.items.filter(t=>!q||ch||t.toLowerCase().includes(q));
+    if(!items.length)return;shown++;
+    const open=q?true:esOpen.has(ci);
+    h+=`<div class="es-cat${open?' open':''}${c.nope?' nope':''}"><button type="button" class="es-cat-btn" aria-expanded="${open}" onclick="esToggle(${ci},this)"><span class="es-cat-name">${esHi(c.n,ch?q:'')}</span><span class="es-cat-count">${items.length}</span><svg class="es-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b6862" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></button><div class="es-cat-panel"><ul class="es-list">${items.map(t=>`<li>${esHi(t,q)}</li>`).join('')}</ul></div></div>`;
+  });
+  document.getElementById('es-list').innerHTML=h;
+  document.getElementById('es-empty').classList.toggle('vis',!shown);
+}
+function esToggle(ci,btn){const w=btn.parentElement,o=!w.classList.contains('open');w.classList.toggle('open',o);btn.setAttribute('aria-expanded',o);if(!esSearch.value.trim())o?esOpen.add(ci):esOpen.delete(ci);}
+function openEligibleSheet(){esheet.dataset.state='half';document.getElementById('es-overlay').classList.add('vis');esheet.classList.add('vis');document.body.style.overflow='hidden';}
+function closeEligibleSheet(){document.getElementById('es-overlay').classList.remove('vis');esheet.classList.remove('vis');document.body.style.overflow='';esSearch.value='';esRender();}
+esSearch.addEventListener('input',esRender);
+esRender();
+</script>
+</body>
+</html>
